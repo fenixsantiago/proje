@@ -177,6 +177,74 @@ button[data-baseweb="tab"][aria-selected="true"] {
 [data-testid="stAppViewContainer"] {
     overflow-y: hidden;
 }
+
+/* ── Menú de navegación moderno ───────────────────────────────── */
+
+/* Ocultar marcadores de posición (son invisibles, solo para CSS) */
+.nav-marker, .nav-marker-active { display: none !important; }
+
+/* Botones de navegación: resetear estilos base */
+section[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    color: rgba(255,255,255,0.80) !important;
+    border: none !important;
+    border-left: 3px solid transparent !important;
+    border-radius: 8px !important;
+    padding: 10px 14px 10px 12px !important;
+    font-size: 0.87rem !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    width: 100% !important;
+    letter-spacing: 0.01em !important;
+    transition: background 0.18s, border-color 0.18s, transform 0.15s, color 0.15s !important;
+    margin-bottom: 1px !important;
+    box-shadow: none !important;
+    line-height: 1.3 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255,255,255,0.11) !important;
+    color: white !important;
+    border-left-color: transparent !important;
+    transform: translateX(3px) !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button:active {
+    transform: translateX(1px) !important;
+}
+
+/* ── Estado activo: se activa cuando el marcador precedente tiene la clase activa ── */
+section[data-testid="stSidebar"] div:has(.nav-marker-active) + div .stButton > button,
+section[data-testid="stSidebar"] div:has(.nav-marker-active) + div > button {
+    background: rgba(255,255,255,0.18) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    border-left-color: transparent !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.14) !important;
+}
+
+/* Etiquetas de grupo del menú */
+.nav-group-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.40);
+    text-transform: uppercase;
+    padding: 16px 6px 5px 4px;
+    margin: 0;
+    line-height: 1;
+    user-select: none;
+}
+
+/* Primera etiqueta sin padding-top */
+.nav-group-label.first { padding-top: 4px; }
+
+/* Separador de grupo */
+.nav-group-sep {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    margin: 10px 0 6px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -520,6 +588,12 @@ def cargar_dataset(archivo_bytes, nombre, sheet_name=None):
         return None, str(e)
 
 # ─────────────────────────────────────────────
+# ESTADO DE NAVEGACIÓN
+# ─────────────────────────────────────────────
+if "pagina" not in st.session_state:
+    st.session_state.pagina = "inicio"
+
+# ─────────────────────────────────────────────
 # SIDEBAR – NAVEGACIÓN
 # ─────────────────────────────────────────────
 with st.sidebar:
@@ -548,6 +622,11 @@ with st.sidebar:
     border: none !important;
     background: transparent !important;
 }
+                /* Ocultar texto de límite del file uploader */
+[data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+    display: none !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -572,30 +651,55 @@ with st.sidebar:
         help="Formatos: Excel (.xlsx, .xls, .xlsm) o CSV"
     )
 
-    st.markdown("---")
-    st.markdown("### 📌 Menú Principal")
+    # ── Menú de navegación moderno ────────────────────────────────────────
+    _MENU_GRUPOS = [
+        {
+            "label": "Análisis",
+            "first": True,
+            "items": [
+                {"icon": "🏠", "label": "Inicio / Resumen",      "key": "inicio"},
+                {"icon": "📊", "label": "Dashboard General",      "key": "dashboard"},
+                {"icon": "🎓", "label": "Análisis por Nivel",     "key": "niveles"},
+                {"icon": "📅", "label": "Análisis por Trimestre", "key": "trimestres"},
+                {"icon": "🏢", "label": "Empresas y Contratos",   "key": "empresas"},
+            ],
+        },
+        {
+            "label": "Sectores y Territorio",
+            "first": False,
+            "items": [
+                {"icon": "🏭", "label": "Actividad Económica",    "key": "actividad_economica"},
+                {"icon": "🗺️", "label": "Mapa de Colombia",       "key": "mapa"},
+                {"icon": "⚠️", "label": "Deserción y Riesgo",     "key": "desercion"},
+            ],
+        },
+        {
+            "label": "Datos",
+            "first": False,
+            "items": [
+                {"icon": "🔍", "label": "Explorar Datos",         "key": "explorar"},
+                {"icon": "📁", "label": "Carga de Datasets",      "key": "carga"},
+            ],
+        },
+    ]
 
-    paginas = {
-        "🏠 Inicio / Resumen":           "inicio",
-        "📊 Dashboard General":          "dashboard",
-        "🎓 Análisis por Nivel":         "niveles",
-        "📅 Análisis por Trimestre":     "trimestres",
-        "🏢 Empresas y Contratos":       "empresas",
-        "🏭 Actividad Económica":        "actividad_economica",
-        "🗺️ Mapa de Colombia":          "mapa",
-        "⚠️ Deserción y Riesgo":         "desercion",
-        "🔍 Explorar Datos":             "explorar",
-        "📁 Carga de Datasets":          "carga",
-    }
+    _pagina_activa = st.session_state.get("pagina", "inicio")
 
-    seleccion = st.radio(
-        "Navegar a:",
-        list(paginas.keys()),
-        label_visibility="collapsed"
-    )
-    pagina = paginas[seleccion]
+    for _grupo in _MENU_GRUPOS:
+        _sep_class = "nav-group-label first" if _grupo["first"] else "nav-group-label"
+        
+        for _item in _grupo["items"]:
+            _is_active = _pagina_activa == _item["key"]
+            _marker = "nav-marker-active" if _is_active else "nav-marker"
+            st.markdown(f'<div class="{_marker}"></div>', unsafe_allow_html=True)
+            if st.button(
+                f'{_item["icon"]}  {_item["label"]}',
+                key=f'nav_{_item["key"]}',
+                use_container_width=True,
+            ):
+                st.session_state.pagina = _item["key"]
+                st.rerun()
 
-    st.markdown("---")
     st.markdown("""
     <div style="padding:10px; font-size:0.75rem; color:rgba(255,255,255,0.65); text-align:center;">
         Sistema Administrativo SENA Contratos de Aprendizaje v2.0
@@ -606,6 +710,8 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 # CARGA Y CACHÉ DEL DATASET
 # ─────────────────────────────────────────────
+pagina = st.session_state.get("pagina", "inicio")
+
 @st.cache_data(show_spinner=False)
 def procesar_archivo(bytes_data, nombre, sheet_name=None):
     df_raw, err = cargar_dataset(bytes_data, nombre, sheet_name=sheet_name)
@@ -750,7 +856,7 @@ if pagina == "carga":
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("---")
+
     st.markdown("### 📤 Cargar Archivo")
     st.info("👈 Usa el panel lateral para subir tu archivo de datos.")
 
@@ -849,10 +955,22 @@ if df_global is None:
     <strong>👈 Para comenzar:</strong> Sube tu archivo de datos usando el panel lateral izquierdo.<br>
     Formatos aceptados: <code>.xlsx</code>, <code>.xls</code>, <code>.xlsm</code>, <code>.csv</code>
     </div>
-    """, unsafe_allow_html=True)
+      """, unsafe_allow_html=True)
+
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("""
+        <div style="color:rgba(255,255,255,0.5); font-size:0.8rem; padding:8px;">
+            🔎 Filtro global disponible después de cargar un dataset.
+        </div>
+        """, unsafe_allow_html=True)
+
+    filtros_globales = {}
+    sel_contrato = "Todos"
     st.stop()
 
 # Alias conveniente
+
 df = df_global
 
 # ─────────────────────────────────────────────
@@ -895,6 +1013,13 @@ with st.sidebar:
             if sel_etapa:
                 filtros_globales["Etapa formación"] = sel_etapa
 
+        if "Año contrato" in df.columns:
+            opts_anio = sorted(df["Año contrato"].dropna().unique().tolist(), reverse=True)
+            opts_anio = [int(a) for a in opts_anio]
+            sel_anio = st.multiselect("Año (Fecha inicio contrato)", opts_anio, default=[], key="gf_anio")
+            if sel_anio:
+                filtros_globales["Año contrato"] = sel_anio
+
         if "Tiene contrato" in df.columns:
             sel_contrato = st.radio(
                 "Estado de contrato",
@@ -905,7 +1030,7 @@ with st.sidebar:
             sel_contrato = "Todos"
 
         if st.button("🔄 Limpiar filtros", use_container_width=True, key="gf_clear"):
-            for k in ["gf_nivel", "gf_regional", "gf_centro", "gf_ciudad", "gf_etapa", "gf_contrato"]:
+            for k in ["gf_nivel", "gf_regional", "gf_centro", "gf_ciudad", "gf_etapa", "gf_anio", "gf_contrato"]:
                 if k in st.session_state:
                     del st.session_state[k]
             st.rerun()
@@ -941,9 +1066,24 @@ if pagina == "inicio":
     """, unsafe_allow_html=True)
 
     hoy = pd.Timestamp.today().normalize()
-    total = len(df)
-    contratados = int(df.get("Tiene contrato", pd.Series([False]*total)).sum())
-    sin_contrato = total - contratados
+
+    # Contar aprendices ÚNICOS por número de documento (igual que Actividad Económica)
+    _doc_col_inicio = None
+    for _c in df.columns:
+        _cl = _c.lower().strip()
+        if "tipo" in _cl and "documento" in _cl:
+            continue
+        if ("numero" in _cl or "número" in _cl) and "documento" in _cl:
+            _doc_col_inicio = _c
+            break
+        elif "documento" in _cl and _doc_col_inicio is None:
+            _doc_col_inicio = _c
+        elif _cl in ["cedula", "cédula", "nit", "identificacion", "identificación"] and _doc_col_inicio is None:
+            _doc_col_inicio = _c
+
+    total = df[_doc_col_inicio].nunique() if _doc_col_inicio else len(df)
+    contratados = int(df.get("Tiene contrato", pd.Series([False]*len(df))).sum())
+    sin_contrato = len(df) - contratados
     tasa_contratacion = round(contratados / total * 100, 1) if total > 0 else 0
 
     niveles = df["Nivel formación"].value_counts() if "Nivel formación" in df.columns else pd.Series()
@@ -1138,8 +1278,7 @@ elif pagina == "dashboard":
     contratados_f = int(dff.get("Tiene contrato", pd.Series([False]*total_f)).sum())
     st.info(f"Mostrando **{total_f:,}** registros tras aplicar filtros.")
 
-    c1, c2, c3, c4 = st.columns(4)
-    tarjeta_metrica(c1, f"{total_f:,}", "Aprendices filtrados")
+    c2, c3, c4 = st.columns(3)
     tarjeta_metrica(c2, f"{contratados_f:,}", "Con contrato")
     tarjeta_metrica(c3, f"{round(contratados_f/total_f*100,1) if total_f>0 else 0}%", "Tasa de contratación")
     if "Duración contrato (días)" in dff.columns:
@@ -1166,7 +1305,7 @@ elif pagina == "dashboard":
                 "COMPENSADO TERMINADO POR JUSTA CAUSA (FALTA DEL APRENDIZ)": "#c0392b",
             }
             vc_ec["Color"] = vc_ec["Estado Contrato"].map(
-                lambda x: color_estado.get(x, "#7F8C8D")
+                lambda x: color_estado.get(x, "#6495ED")
             )
 
             fig_ec = go.Figure(go.Bar(
@@ -1270,7 +1409,7 @@ elif pagina == "dashboard":
                     x="Contratos", y="Programa",
                     orientation="h",
                     title=f"🔝 Top {top_n} programas — Mayor contratación",
-                    color_discrete_sequence=["#7F8C8D"],
+                    color_discrete_sequence=["#6495ED"],
                     text="Contratos",
                 )
                 fig_top.update_traces(textposition="outside")
@@ -1364,9 +1503,9 @@ elif pagina == "niveles":
                                barmode="group",
                                title="Distribución Lectiva vs Productiva por Nivel",
                                color_discrete_map={
-                                   "LECTIVA": "#7F8C8D",
+                                   "LECTIVA": "#0000CD",
                                    "PRODUCTIVA": "#F39C12",
-                                   "COMPLETADO": "#2980B9",
+                                   "COMPLETADO": "#16A085",
                                })
             fig_etapa.update_layout(plot_bgcolor="white", paper_bgcolor="white",
                                     font_family="Inter")
@@ -1378,7 +1517,7 @@ elif pagina == "niveles":
         top_esp.columns = ["Especialidad","Aprendices"]
         top_esp["Especialidad"] = top_esp["Especialidad"].str[:60]
         fig_esp = px.bar(top_esp, y="Especialidad", x="Aprendices", orientation="h",
-                         color="Aprendices", color_continuous_scale=["#ECF0F1","#7F8C8D"],
+                         color="Aprendices", color_continuous_scale=["#6495ED","#0000CD"],
                          title="")
         fig_esp.update_layout(plot_bgcolor="white", paper_bgcolor="white",
                               font_family="Inter", height=450,
@@ -1802,11 +1941,9 @@ elif pagina == "empresas":
         total_empresas = df_emp["Razón social"].nunique()
         total_contratos = int(df.get("Tiene contrato", pd.Series([False]*len(df))).sum())
 
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         tarjeta_metrica(c1, f"{total_empresas:,}", "Empresas únicas")
         tarjeta_metrica(c2, f"{total_contratos:,}", "Total contratos")
-        if total_empresas > 0:
-            tarjeta_metrica(c3, f"{round(total_contratos/total_empresas,1)}", "Contratos / empresa", color="#E74C3C")
 
         # Top empresas
         top_n = st.slider("Top N empresas", 5, 30, 15)
@@ -1816,7 +1953,7 @@ elif pagina == "empresas":
         fig_emp = px.bar(top_emp, y="Razón social", x="Contratos",
                          orientation="h",
                          color="Contratos",
-                         color_continuous_scale=["#FFCCCC","#E74C3C"],
+                         color_continuous_scale=["#6495ED","#1E90FF"],
                          title=f"🏆 Top {top_n} Empresas por Número de Contratos")
         fig_emp.update_layout(plot_bgcolor="white", paper_bgcolor="white",
                               font_family="Inter", height=max(400, top_n*28),
@@ -1841,26 +1978,16 @@ elif pagina == "empresas":
                                       yaxis={"categoryorder":"total ascending"})
             st.plotly_chart(fig_emp_niv, use_container_width=True)
 
-    # Duración de contratos
-    if "Duración contrato (días)" in df.columns:
-        st.markdown("### ⏱️ Distribución de duración de contratos")
+    # Duración de contratos por nivel
+    if "Duración contrato (días)" in df.columns and "Nivel formación" in df.columns:
         df_dur = df[df["Duración contrato (días)"].notna() & (df["Duración contrato (días)"]>0)]
-        fig_hist = px.histogram(df_dur, x="Duración contrato (días)",
-                                nbins=40,
-                                color_discrete_sequence=["#000080"],
-                                title="Histograma: Duración de contratos (días)")
-        fig_hist.update_layout(plot_bgcolor="white", paper_bgcolor="white",
-                               font_family="Inter")
-        st.plotly_chart(fig_hist, use_container_width=True)
-
-        if "Nivel formación" in df.columns:
-            fig_box = px.box(df_dur, x="Nivel formación", y="Duración contrato (días)",
-                             color="Nivel formación",
-                             color_discrete_sequence=PALETA,
-                             title="Duración de Contratos por Nivel")
-            fig_box.update_layout(plot_bgcolor="white", paper_bgcolor="white",
-                                  font_family="Inter")
-            st.plotly_chart(fig_box, use_container_width=True)
+        fig_box = px.box(df_dur, x="Nivel formación", y="Duración contrato (días)",
+                         color="Nivel formación",
+                         color_discrete_sequence=PALETA,
+                         title="Duración de Contratos por Nivel")
+        fig_box.update_layout(plot_bgcolor="white", paper_bgcolor="white",
+                              font_family="Inter")
+        st.plotly_chart(fig_box, use_container_width=True)
 
     # ── PREDICCIÓN: Dificultad de Contratación por Programa ────────────────
     st.markdown("---")
@@ -2140,6 +2267,38 @@ elif pagina == "mapa":
         resumen_geo["Sin_contrato"] = resumen_geo["Total_aprendices"] - resumen_geo["Contratados"]
         resumen_geo["Tasa (%)"] = (resumen_geo["Contratados"] / resumen_geo["Total_aprendices"] * 100).round(1)
 
+    # Contratos vigentes por departamento (Estado Contrato no nulo ni vacío)
+    _col_ec = "Estado Contrato"
+    if _col_ec in df_geo.columns:
+        _vigentes = (
+            df_geo[df_geo[_col_ec].notna() & (df_geo[_col_ec].astype(str).str.strip() != "")]
+            .groupby("Depto_norm")
+            .size()
+            .reset_index(name="Contratos_vigentes")
+        )
+        resumen_geo = resumen_geo.merge(_vigentes, on="Depto_norm", how="left")
+        resumen_geo["Contratos_vigentes"] = resumen_geo["Contratos_vigentes"].fillna(0).astype(int)
+
+    # Aprendices únicos en "Final Contrato"
+    _col_ea = next((c for c in df_geo.columns if c.lower().strip() == "estado aprendiz"), None)
+    _col_id = next((c for c in df_geo.columns if c.lower().strip() in ["documento", "número documento", "identificacion", "cedula", "num documento"]), None)
+    if _col_ea:
+        _df_final = df_geo[df_geo[_col_ea].astype(str).str.strip().str.lower() == "final contrato"]
+        if _col_id:
+            _final_count = (
+                _df_final.groupby("Depto_norm")[_col_id]
+                .nunique()
+                .reset_index(name="Final_contrato")
+            )
+        else:
+            _final_count = (
+                _df_final.groupby("Depto_norm")
+                .size()
+                .reset_index(name="Final_contrato")
+            )
+        resumen_geo = resumen_geo.merge(_final_count, on="Depto_norm", how="left")
+        resumen_geo["Final_contrato"] = resumen_geo["Final_contrato"].fillna(0).astype(int)
+
     # ── Selector de departamento (única fuente de verdad) ────────────────
     deptos_disponibles = sorted(resumen_geo["Depto_norm"].unique().tolist())
 
@@ -2209,11 +2368,16 @@ elif pagina == "mapa":
             fila = resumen_geo[resumen_geo["Depto_norm"] == depto_final]
             if not fila.empty:
                 f = fila.iloc[0]
-                mc1, mc2, mc3 = st.columns(3)
+                mc1, mc2, mc3, mc4 = st.columns(4)
                 tarjeta_metrica(mc1, f"{int(f['Total_aprendices']):,}", f"Aprendices en {depto_final}")
-                if "Contratados" in f.index:
-                    tarjeta_metrica(mc2, f"{int(f['Contratados']):,}", "Con contrato", f"{f['Tasa (%)']}%")
+                if "Contratos_vigentes" in f.index:
+                    tarjeta_metrica(mc2, f"{int(f['Contratos_vigentes']):,}", "Contratos vigentes", color="#27AE60")
+                elif "Contratados" in f.index:
+                    tarjeta_metrica(mc2, f"{int(f['Contratados']):,}", "Contratos vigentes", color="#27AE60")
+                if "Sin_contrato" in f.index:
                     tarjeta_metrica(mc3, f"{int(f['Sin_contrato']):,}", "Sin contrato", color="#E74C3C")
+                if "Final_contrato" in f.index:
+                    tarjeta_metrica(mc4, f"{int(f['Final_contrato']):,}", "Final Contrato", color="#2980B9")
 
     st.markdown("---")
 
@@ -2339,7 +2503,7 @@ elif pagina == "desercion":
                 fig_des_niv = fig_pie(vc_des_niv["Nivel"].tolist(),
                                       vc_des_niv["Cantidad"].tolist(),
                                       "Deserción por Nivel de Formación",
-                                      colors=["#E74C3C","#8E44AD","#F39C12","#2980B9"])
+                                      colors=["#E74C3C","#F39C12","#8E44AD","#2980B9"])
                 st.plotly_chart(fig_des_niv, use_container_width=True)
 
         # Comparativo Técnico vs Tecnólogo
@@ -2353,7 +2517,7 @@ elif pagina == "desercion":
                                color="Nivel formación", barmode="group",
                                title="Estado aprendiz: Técnico vs Tecnólogo",
                                color_discrete_map={
-                                   "TÉCNICO": "#7F8C8D",
+                                   "TÉCNICO": "#0000FF",
                                    "TECNÓLOGO": "#2980B9"
                                })
             fig_comp2.update_layout(plot_bgcolor="white", paper_bgcolor="white",
@@ -2509,8 +2673,8 @@ elif pagina == "actividad_economica":
     total_empresas_reg = df_reg[df_reg["NIT"] != 0]["NIT"].nunique()
     total_sectores = df_reg["Actividad económica"].nunique()
     empresas_con_contratos = (
-    int((df_global["Estado Contrato"] == "VIGENTE").sum())
-    if df_global is not None and "Estado Contrato" in df_global.columns else 0
+    int((df["Estado Contrato"] == "VIGENTE").sum())
+    if df_global is not None and "Estado Contrato" in df.columns else 0
 )
 
     c1, c2, c3 = st.columns(3)
@@ -2578,7 +2742,7 @@ elif pagina == "actividad_economica":
     st.plotly_chart(fig_sec_pie, use_container_width=True)  
 
     # Contratos vigentes por sector (contando "VIGENTE" en Estado Contrato de aprendices)
-    if df_global is not None and "Estado Contrato" in df_global.columns:
+    if df_global is not None and "Estado Contrato" in df.columns:
         st.markdown("### 📋 Contratos Vigentes y Cuota de Aprendices por Sector")
 
         # Normalizar razón social para cruzar aprendices con empresas reguladas
@@ -2587,7 +2751,7 @@ elif pagina == "actividad_economica":
                 return ""
             return re.sub(r'\s+', ' ', str(s)).strip().upper()
 
-        df_apr_norm = df_global.copy()
+        df_apr_norm = df.copy()
         df_apr_norm["_razon_norm"] = df_apr_norm["Razón social"].apply(_normalizar_razon) \
             if "Razón social" in df_apr_norm.columns else ""
 
@@ -2620,7 +2784,7 @@ elif pagina == "actividad_economica":
                 df_cv.sort_values("Contratos_vigentes"),
                 x="Contratos_vigentes", y="Sector_corto", orientation="h",
                 color="Contratos_vigentes",
-                color_continuous_scale=["#D6EAF8", "#2980B9"],
+                color_continuous_scale=["#A9DFBF", "#1E8449"],
                 title=f"Contratos vigentes por sector (Estado Contrato) — Top {top_n_sectores}",
                 text="Contratos_vigentes",
             )
@@ -2673,7 +2837,7 @@ elif pagina == "actividad_economica":
         df_reg_norm = df_reg.copy()
         df_reg_norm["_razon_key"] = df_reg_norm["Razon social"].apply(normalizar_razon)
 
-        df_apr = df_global.copy()
+        df_apr = df.copy()
         # Detectar columna de razón social en aprendices
         razon_col = None
         for c in df_apr.columns:
@@ -2691,20 +2855,14 @@ elif pagina == "actividad_economica":
         df_apr["_razon_key"] = df_apr[razon_col].apply(normalizar_razon)
 
         # Detectar columna de NÚMERO de documento para contar aprendices ÚNICOS
-        # (sin esto, se contaban filas, y un mismo aprendiz puede tener varias
-        # filas en Libro1 por múltiples fichas/contratos)
-        #
-        # IMPORTANTE: se excluyen columnas tipo "Tipo de Documento" (CC, TI, CE...)
-        # porque esa columna también contiene la palabra "documento" pero solo
-        # tiene un puñado de valores posibles (NO identifica aprendices únicos).
         doc_col = None
         candidatos_doc = []
         for c in df_apr.columns:
             cl = c.lower().strip()
             if "tipo" in cl and "documento" in cl:
-                continue  # excluir explícitamente "Tipo de Documento"
+                continue
             if ("numero" in cl or "número" in cl) and "documento" in cl:
-                candidatos_doc.append((0, c))  # prioridad máxima: "Número Documento"
+                candidatos_doc.append((0, c))
             elif "documento" in cl:
                 candidatos_doc.append((1, c))
             elif cl in ["cedula", "cédula", "nit", "identificacion", "identificación"]:
@@ -2713,14 +2871,74 @@ elif pagina == "actividad_economica":
             candidatos_doc.sort(key=lambda x: x[0])
             doc_col = candidatos_doc[0][1]
 
-        # Tabla de mapeo: razon_key → sector
-        sector_lookup = (
-            df_reg_norm[["_razon_key", "Actividad económica", "Sector", "Sector_corto"]]
-            .drop_duplicates(subset=["_razon_key"])
-        )
+        # ── Cruce por NIT (igual que medida DAX de Power BI) ─────────────
+        # Detectar columna NIT en aprendices
+        nit_col_apr = None
+        for c in df_apr.columns:
+            cl = c.lower().strip()
+            if cl == "nit" or ("nit" in cl and "empresa" in cl):
+                nit_col_apr = c
+                break
 
-        # Cruce
-        df_cruce = df_apr.merge(sector_lookup, on="_razon_key", how="left")
+        # Detectar columna NIT en empresas reguladas
+        nit_col_reg = None
+        for c in df_reg.columns:
+            if c.strip().upper() == "NIT":
+                nit_col_reg = c
+                break
+
+        def normalizar_nit(s):
+            if pd.isna(s):
+                return ""
+            # Convertir float a int primero para eliminar el .0
+            # Ej: 800123456.0 → "800123456"
+            try:
+                s = str(int(float(str(s).strip())))
+            except (ValueError, OverflowError):
+                s = str(s).strip()
+            # Quitar puntos, guiones y dígito de verificación (después del último guión)
+            s = s.replace(".", "").replace(",", "").strip()
+            s = s.split("-")[0].strip()  # quitar dígito verificación si viene con guión
+            return s    
+
+        if nit_col_apr and nit_col_reg:
+            # Cruce principal: por NIT
+            df_reg_norm["_nit_key"] = df_reg_norm[nit_col_reg].apply(normalizar_nit)
+            df_apr["_nit_key"] = df_apr[nit_col_apr].apply(normalizar_nit)
+
+            sector_lookup = (
+                df_reg_norm[["_nit_key", "Actividad económica", "Sector", "Sector_corto"]]
+                .drop_duplicates(subset=["_nit_key"])
+                .query("_nit_key != ''")
+            )
+
+            # Cruce primario: por NIT
+            df_cruce = df_apr.merge(sector_lookup, on="_nit_key", how="left")
+
+            # Cruce secundario: para los que no cruzaron por NIT, intentar por Razón Social
+            sin_sector_mask = df_cruce["Actividad económica"].isna()
+            if sin_sector_mask.sum() > 0:
+                sector_lookup_razon = (
+                    df_reg_norm[["_razon_key", "Actividad económica", "Sector", "Sector_corto"]]
+                    .drop_duplicates(subset=["_razon_key"])
+                    .query("_razon_key != ''")
+                )
+                df_sin_sector = df_cruce[sin_sector_mask][["_nit_key", "_razon_key"]].copy()
+                df_recuperados = df_sin_sector.merge(sector_lookup_razon, on="_razon_key", how="left")
+
+                # Rellenar los que ahora sí cruzaron por Razón Social
+                for col in ["Actividad económica", "Sector", "Sector_corto"]:
+                    df_cruce.loc[sin_sector_mask, col] = df_recuperados[col].values
+            st.caption(f"🔎 Cruce por: **NIT** (`{nit_col_apr}` ↔ `{nit_col_reg}`)")
+
+        else:
+            # Fallback: cruce por Razón Social si no hay NIT
+            sector_lookup = (
+                df_reg_norm[["_razon_key", "Actividad económica", "Sector", "Sector_corto"]]
+                .drop_duplicates(subset=["_razon_key"])
+            )
+            df_cruce = df_apr.merge(sector_lookup, on="_razon_key", how="left")
+            st.caption("🔎 Cruce por: **Razón Social** (columna NIT no encontrada)")
 
         if doc_col:
             # Conteo de APRENDICES ÚNICOS (por Número de Documento), no de filas
@@ -2730,7 +2948,7 @@ elif pagina == "actividad_economica":
             # Fallback: si no se detecta columna de documento, se usa el conteo de filas
             st.warning("⚠️ No se encontró una columna de 'Número de Documento' en el dataset de aprendices; "
                         "las tarjetas muestran número de filas, no de aprendices únicos.")
-            n_aprendices_total = len(df_cruce)
+            n_aprendices_total = len(df_apr)
             n_cruzados = df_cruce["Actividad económica"].notna().sum()
 
         pct_cruce = round(n_cruzados / n_aprendices_total * 100, 1) if n_aprendices_total else 0.0
@@ -2785,32 +3003,40 @@ elif pagina == "actividad_economica":
             .head(top_n_sectores)
         )
 
-        col_apr1, col_apr2 = st.columns([3, 2])
-        with col_apr1:
-            fig_apr_sec = px.bar(
-                apr_por_sector.sort_values("Aprendices"),
-                x="Aprendices", y="Sector_corto", orientation="h",
-                color="Aprendices",
-                color_continuous_scale=["#ECF0F1", "#7F8C8D"],
-                title=f"Aprendices por sector económico — Top {top_n_sectores}",
-                text="Aprendices",
-            )
-            fig_apr_sec.update_traces(textposition="outside")
-            fig_apr_sec.update_layout(
-                plot_bgcolor="white", paper_bgcolor="white", font_family="Inter",
-                height=max(400, top_n_sectores * 32),
-                yaxis={"categoryorder": "total ascending"},
-                coloraxis_showscale=False, yaxis_title="", xaxis_title="Aprendices",
-            )
-            st.plotly_chart(fig_apr_sec, use_container_width=True)
-
-        with col_apr2:
-            fig_apr_pie = fig_pie(
-                apr_por_sector["Sector_corto"].tolist(),
-                apr_por_sector["Aprendices"].tolist(),
-                "Proporción de aprendices por sector",
-            )
-            st.plotly_chart(fig_apr_pie, use_container_width=True)
+        fig_apr_pie = go.Figure(go.Pie(
+            labels=apr_por_sector["Sector_corto"].tolist(),
+            values=apr_por_sector["Aprendices"].tolist(),
+            marker_colors=PALETA,
+            hole=0.45,
+            textinfo="percent",
+            textfont_size=12,
+            textposition="inside",
+            pull=[0.03] * len(apr_por_sector),
+            hovertemplate="<b>%{label}</b><br>Aprendices: %{value:,}<br>%{percent}<extra></extra>",
+        ))
+        fig_apr_pie.update_layout(
+            title=dict(
+                text="Proporción de aprendices por sector económico",
+                font=dict(size=15, family="Inter"),
+                x=0.5,
+                xanchor="center",
+            ),
+            font_family="Inter",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            legend=dict(
+                orientation="v",
+                x=1.02,
+                y=0.5,
+                font=dict(size=11),
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="#E0E0E0",
+                borderwidth=1,
+            ),
+            margin=dict(t=60, b=20, l=20, r=200),
+            height=500,
+        )
+        st.plotly_chart(fig_apr_pie, use_container_width=True)
 
         # ── 6b. Aprendices por estado y sector ────────────────────────────
         if estado_col:
@@ -2848,7 +3074,7 @@ elif pagina == "actividad_economica":
             if "especialidad" in cl and esp_col is None:
                 esp_col = c
 
-        tab_f1, tab_f2, tab_f3 = st.tabs(["📋 Programas más contratados", "🔢 Fichas por sector", "📊 Tabla detallada"])
+        tab_f1, tab_f3 = st.tabs(["📋 Programas más contratados", "📊 Tabla detallada"])
 
         with tab_f1:
             if esp_col:
@@ -2885,49 +3111,6 @@ elif pagina == "actividad_economica":
                     st.plotly_chart(fig_prog, use_container_width=True)
             else:
                 st.warning("No se encontró columna 'Especialidad' en el dataset de aprendices.")
-
-        with tab_f2:
-            if ficha_col and esp_col:
-                ficha_sector = (
-                    df_vista.groupby(["Sector_corto", ficha_col, esp_col])
-                    .size().reset_index(name="Aprendices")
-                    .sort_values("Aprendices", ascending=False)
-                )
-                # Top N fichas por sector seleccionado
-                top_fichas = (
-                    ficha_sector.groupby(ficha_col)["Aprendices"]
-                    .sum()
-                    .sort_values(ascending=False)
-                    .head(15)
-                    .index.tolist()
-                )
-                fichas_data = ficha_sector[ficha_sector[ficha_col].isin(top_fichas)].copy()
-                fichas_data["Ficha_Prog"] = fichas_data[ficha_col].astype(str) + " – " + fichas_data[esp_col].apply(
-                    lambda x: x[:40] + "…" if len(str(x)) > 40 else x
-                )
-
-                if not fichas_data.empty:
-                    agg_fichas = (
-                        fichas_data.groupby(["Ficha_Prog", "Sector_corto"])["Aprendices"]
-                        .sum().reset_index()
-                    )
-                    fig_fichas = px.bar(
-                        agg_fichas,
-                        x="Aprendices", y="Ficha_Prog", color="Sector_corto",
-                        orientation="h", barmode="stack",
-                        title="Top fichas — distribución por sector económico",
-                        color_discrete_sequence=PALETA,
-                    )
-                    fig_fichas.update_layout(
-                        plot_bgcolor="white", paper_bgcolor="white", font_family="Inter",
-                        height=max(450, len(top_fichas) * 34),
-                        yaxis={"categoryorder": "total ascending"},
-                        yaxis_title="", xaxis_title="Aprendices",
-                        legend_title="Sector",
-                    )
-                    st.plotly_chart(fig_fichas, use_container_width=True)
-            elif not ficha_col:
-                st.warning("No se encontró columna 'Ficha' en el dataset de aprendices.")
 
         with tab_f3:
             # Tabla resumen: sector × programa × ficha
