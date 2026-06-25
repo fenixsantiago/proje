@@ -414,7 +414,7 @@ def enriquecer_df(df):
                  "Fecha fin contrato","Fecha creación","Fecha"]
     for c in date_cols:
         if c in df.columns:
-            df[c] = pd.to_datetime(df[c], format="%d/%m/%Y", errors="coerce")
+            df[c] = pd.to_datetime(df[c], dayfirst=True, errors="coerce")
 
     # Trimestre actual (tomando la fecha de inicio de contrato o fecha productiva)
     hoy = pd.Timestamp.today()
