@@ -2091,7 +2091,7 @@ elif pagina == "empresas":
             )
             st.plotly_chart(fig_scatter_emp, use_container_width=True)
 
-        prog_mas_dificil_emp = top_dificiles_emp.iloc[-1] if not top_dificiles_emp.empty else None
+        prog_mas_dificil_emp = top_dificiles_emp.iloc[0] if not top_dificiles_emp.empty else None
         programas_sw_emp = resumen_pred_filtrado_emp[
             resumen_pred_filtrado_emp[_esp_col_emp].str.upper().str.contains(
                 "SOFTWARE|SISTEMAS|PROGRAMACION|DESARROLLO", na=False
